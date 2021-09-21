@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 export default function IndexPage(): JSX.Element {
   const [pollId, setPollId] = useState<number>(10924113);
   const [option, setOption] = useState<number>(50270630);
+  const [votes, setVotes] = useState<number>(100);
 
   const [loading, setLoading] = useState<boolean>(false);
   const onSubmit = useCallback(async () => {
@@ -38,14 +39,21 @@ export default function IndexPage(): JSX.Element {
           label='Poll ID' 
           placeholder='Ex: 10924113' 
           value={pollId} 
-          onChange={(e) => setPollId(e.currentTarget.value)} 
+          onChange={(e) => setPollId(Number(e.currentTarget.value))} 
         />
         <input 
           type='number' 
           label='Option ID' 
           placeholder='Ex: 50270630' 
           value={option} 
-          onChange={(e) => setOption(e.currentTarget.value)} 
+          onChange={(e) => setOption(Number(e.currentTarget.value))} 
+        />
+        <input
+          type='number'
+          label='Number of votes',
+          placeholder='Ex: 10',
+          value={votes}
+          onChange={(e) => setVotes(Number(e.currentTarget.value))}
         />
         <button type='submit' label='Rack em up!' disabled={loading} />
       </form>
