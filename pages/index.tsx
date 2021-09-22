@@ -6,8 +6,8 @@ import { to } from 'await-to-js';
 const BOTTLENECK = { maxConcurrent: 100 };
 
 export default function IndexPage(): JSX.Element {
-  const [poll, setPoll] = useState<number>(10924113);
-  const [option, setOption] = useState<number>(50270630);
+  const [poll, setPoll] = useState('https://poll.fm/10924113');
+  const [option, setOption] = useState(50270630);
   const [votes, setVotes] = useState<number>(1000);
 
   const [count, setCount] = useState<number>(0);
@@ -40,7 +40,8 @@ export default function IndexPage(): JSX.Element {
     e.stopPropagation();
     setGoing(true);
     setCount(0);
-    const url = `/api/poll?poll=${poll}&option=${option}&votes=${votes}`;
+    const pollId = Number(poll.split('https://poll.fm/').pop());
+    const url = `/api/poll?poll=${pollId}&option=${option}&votes=${votes}`;
     setMessage(`Forging ${votes} votes...`);
     await to(Promise.all(Array(Number(votes)).fill(null).map((_, idx) => limiter.current.schedule({ id: idx.toString() }, () => fetch(url)))));
     setMessage(`Forged ${votes} votes.`);
@@ -63,14 +64,14 @@ export default function IndexPage(): JSX.Element {
         <p>Simply click the “Start” button, leave this tab open, and watch the votes!</p>
       </header>
       <div className='field'>
-        <label htmlFor='poll'>Poll ID</label>
+        <label htmlFor='poll'>Poll URL</label>
         <input 
           id='poll'
-          type='number' 
-          placeholder='Ex: 10924113' 
+          type='url' 
+          placeholder='Ex: https://poll.fm/10924113' 
           value={poll} 
           disabled={going}
-          onChange={(e) => setPoll(Number(e.currentTarget.value))} 
+          onChange={(e) => setPoll(e.currentTarget.value)} 
         />
       </div>
       <div className='field'>
