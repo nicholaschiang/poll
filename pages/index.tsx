@@ -69,6 +69,7 @@ export default function IndexPage(): JSX.Element {
             type='number' 
             placeholder='Ex: 10924113' 
             value={pollId} 
+            disabled={loading}
             onChange={(e) => setPollId(Number(e.currentTarget.value))} 
           />
         </div>
@@ -79,6 +80,7 @@ export default function IndexPage(): JSX.Element {
             type='number' 
             placeholder='Ex: 50270630' 
             value={option} 
+            disabled={loading}
             onChange={(e) => setOption(Number(e.currentTarget.value))} 
           />
         </div>
@@ -89,6 +91,7 @@ export default function IndexPage(): JSX.Element {
             type='number'
             placeholder='Ex: 10'
             value={votes}
+            disabled={loading}
             onChange={(e) => setVotes(Number(e.currentTarget.value))}
           />
         </div>
@@ -165,7 +168,8 @@ export default function IndexPage(): JSX.Element {
           transform: scale(.99);
         }
 
-        button:disabled {
+        button:disabled,
+        input:disabled {
           cursor: wait;
           border-color: var(--accents-2);
           background: var(--accents-1);
