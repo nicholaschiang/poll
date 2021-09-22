@@ -83,11 +83,6 @@ export default function App({ Component, pageProps }: AppProps): JSX.Element {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const [active, setActive] = useState<{ x: number; width: number }>({
-    x: 0,
-    width: 0,
-  });
-
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
       <NProgress />
