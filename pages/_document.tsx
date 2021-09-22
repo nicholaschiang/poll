@@ -10,7 +10,6 @@ export default class Document extends NextDocument {
     return (
       <Html>
         <Head>
-          <title>Poll Daddy Hack</title>
           <link
             rel='preload'
             href='/fonts/inter-var-latin.woff2'

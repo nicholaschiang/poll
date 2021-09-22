@@ -1,102 +1,105 @@
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import Bottleneck from 'bottleneck';
 import NProgress from 'nprogress';
+import { to } from 'await-to-js';
+
+const BOTTLENECK = { maxConcurrent: 1, minTime: 6000 };
 
 export default function IndexPage(): JSX.Element {
-  const [pollId, setPollId] = useState<number>(10924113);
+  const [poll, setPoll] = useState<number>(10924113);
   const [option, setOption] = useState<number>(50270630);
   const [votes, setVotes] = useState<number>(100);
 
-  const [loading, setLoading] = useState<boolean>(false);
+  const [count, setCount] = useState<number>(0);
+  const [going, setGoing] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
   useEffect(() => {
-    if (loading) {
-      NProgress.start();
+    if (going) {
+      NProgress.set(count / votes);
     } else {
       NProgress.done();
     }
-  }, [loading]);
-  const onSubmit = useCallback(async (e: FormEvent) => {
+  }, [going, count, votes]);
+  const limiter = useRef(new Bottleneck(BOTTLENECK));
+  useEffect(() => {
+    limiter.current.on('done', () => setCount((prev) => prev + 1));
+    limiter.current.on('failed', async (error, jobInfo) => {
+      setMessage(`Vote (${jobInfo.options.id}) failed: ${error}`);
+      if (jobInfo.retryCount < 10) {
+        setMessage(`Retrying vote (${jobInfo.options.id}) in 100ms...`);
+        return 100;
+      }
+      return;
+    });
+    limiter.current.on('retry', (_, jobInfo) => {
+      setMessage(`Now retrying vote (${jobInfo.options.id})...`);
+    });
+  }, [going]);
+  const start = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setLoading(true);
-    const headers = {
-      'Access-Control-Allow-Origin': 'https://poll.fm',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'DNT': '1',
-      'Host': 'poll.fm',
-      'Pragma': 'no-cache',
-      'Referer': `https://poll.fm/${pollId}`,
-      'Sec-Fetch-Dest': 'empty',
-      'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Site': 'same-origin',
-      'TE': 'trailers',
-    };
-    console.log('Headers:', headers);
-    const res = await fetch(`https://poll.fm/${pollId}`, { headers });
-    console.log('Response:', res);
-    const html = await res.text();
-    console.log('HTML:', html);
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    console.log('Doc:', doc);
-    const btn = doc.querySelector('.vote-button');
-    console.log('Button:', btn);
-    const data = JSON.parse((btn as HTMLElement | null)?.dataset.vote || '');
-    console.log('Data:', data);
-    const input = doc.querySelector('input[name="pz"]');
-    console.log('Input:', input);
-    const pz = (input as HTMLInputElement | null)?.value || 1;
-    console.log('PZ:', pz);
-    const url =
-      `https://poll.fm/vote?va=${data.at}&pt=${data.m}&r=${data.b}` +
-      `&p=${data.id}&a=${option}&o=&t=${data.t}&token=${data.n}&pz=${pz}`;
-    console.log('URL:', url);
-    await fetch(url, { headers });
-    setLoading(false);
-  }, [option, pollId]);
+    setGoing(true);
+    setCount(0);
+    const url = `/api/poll?poll=${poll}&option=${option}&votes=${votes}`;
+    setMessage(`Forging ${votes} votes...`);
+    await to(Promise.all(Array(Number(votes)).fill(null).map((_, idx) => limiter.current.schedule({ id: idx.toString() }, () => fetch(url)))));
+    setMessage(`Forged ${votes} votes.`);
+    setGoing(false);
+  }, [poll, option, votes]);
+  const stop = useCallback(async (e: FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMessage(`Canceling ${votes - count} votes...`);
+    await to(limiter.current.stop());
+    limiter.current = new Bottleneck(BOTTLENECK);
+    setMessage(`Canceled ${votes - count} votes.`);
+  }, [votes, count]);
 
   return (
     <main className='wrapper'>
       <header>
         <h1>Poll Daddy Hack</h1>
         <p>Easily rack up votes for any Poll Daddy public survey.</p>
-        <p>Simply click the “Rack em up!” button and leave this tab open!</p>
+        <p>Simply click the “Start” button, leave this tab open, and watch the votes!</p>
       </header>
-      <form onSubmit={onSubmit}>
-        <div>
-          <label htmlFor='poll'>Poll ID</label>
-          <input 
-            id='poll'
-            type='number' 
-            placeholder='Ex: 10924113' 
-            value={pollId} 
-            disabled={loading}
-            onChange={(e) => setPollId(Number(e.currentTarget.value))} 
-          />
-        </div>
-        <div>
-          <label htmlFor='option'>Option ID</label>
-          <input
-            id='option'
-            type='number' 
-            placeholder='Ex: 50270630' 
-            value={option} 
-            disabled={loading}
-            onChange={(e) => setOption(Number(e.currentTarget.value))} 
-          />
-        </div>
-        <div>
-          <label htmlFor='votes'>Number of votes</label>
-          <input
-            id='votes'
-            type='number'
-            placeholder='Ex: 10'
-            value={votes}
-            disabled={loading}
-            onChange={(e) => setVotes(Number(e.currentTarget.value))}
-          />
-        </div>
-        <button className='reset' type='submit' disabled={loading}>Rack em up!</button>
-      </form>
+      <div className='field'>
+        <label htmlFor='poll'>Poll ID</label>
+        <input 
+          id='poll'
+          type='number' 
+          placeholder='Ex: 10924113' 
+          value={poll} 
+          disabled={going}
+          onChange={(e) => setPoll(Number(e.currentTarget.value))} 
+        />
+      </div>
+      <div className='field'>
+        <label htmlFor='option'>Option ID</label>
+        <input
+          id='option'
+          type='number' 
+          placeholder='Ex: 50270630' 
+          value={option} 
+          disabled={going}
+          onChange={(e) => setOption(Number(e.currentTarget.value))} 
+        />
+      </div>
+      <div className='field'>
+        <label htmlFor='votes'>Number of votes</label>
+        <input
+          id='votes'
+          type='number'
+          placeholder='Ex: 100'
+          value={votes}
+          disabled={going}
+          onChange={(e) => setVotes(Number(e.currentTarget.value))}
+        />
+      </div>
+      <div className='buttons'>
+        <button className='reset' type='button' disabled={going} onClick={start}>Start</button>
+        <button className='reset' type='button' disabled={!going} onClick={stop}>Stop</button>
+      </div>
+      <p>{(count / votes * 100).toFixed(2)}% progress; {count}/{votes} votes forged. <span className='message'>{message}</span></p>
       <style jsx>{`
         main {
           margin: 1rem auto;
@@ -107,7 +110,11 @@ export default function IndexPage(): JSX.Element {
           margin: 2rem 0;
         }
 
-        form div {
+        .message {
+          color: var(--accents-5);
+        }
+
+        .field {
           border: 1px solid var(--accents-2);
           background: var(--accents-1);
           border-radius: 4px;
@@ -115,12 +122,9 @@ export default function IndexPage(): JSX.Element {
           margin: 1rem 0;
         }
 
-        form div:first-of-type {
-          margin-top: 2rem;
-        }
-
-        form div:last-of-type {
-          margin-bottom: 2rem;
+        .buttons {
+          display: flex;
+          margin: 0 0 2rem;
         }
 
         label {
@@ -147,6 +151,12 @@ export default function IndexPage(): JSX.Element {
           caret-color: var(--on-background);
           text-overflow: ellipsis;
           appearance: none;
+          transition: border 0.2s ease 0s;
+        }
+
+        input:focus,
+        input:active {
+          border: 1px solid var(--primary);
         }
 
         button {
@@ -158,10 +168,19 @@ export default function IndexPage(): JSX.Element {
           font-weight: 700;
           font-size: 1.25rem;
           padding: 1rem 2rem;
+          margin: 0 0.5rem;
           width: 100%;
           cursor: pointer;
           transition: transform 0.2s ease 0s;
           text-transform: uppercase;
+        }
+
+        button:first-child {
+          margin-left: 0;
+        }
+
+        button:last-child {
+          margin-right: 0;
         }
 
         button:hover {
@@ -170,9 +189,10 @@ export default function IndexPage(): JSX.Element {
 
         button:disabled,
         input:disabled {
-          cursor: wait;
+          cursor: not-allowed;
           border-color: var(--accents-2);
           background: var(--accents-1);
+          color: var(--on-background);
           filter: grayscale(1);
           transform: translateZ(0px);
           backface-visibility: hidden;

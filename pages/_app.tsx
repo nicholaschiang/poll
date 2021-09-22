@@ -1,90 +1,16 @@
-import { useEffect, useState } from 'react';
 import { AppProps } from 'next/app';
+import Head from 'next/head';
 
 import NProgress from 'components/nprogress';
 
-import { Theme, ThemeContext } from 'lib/theme';
-
 import 'fonts.css';
 
-const light = `
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
-  --font-mono: Menlo, Monaco, Lucida Console, Liberation Mono,
-    DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
-
-  --link-size: 14px;
-  --page-width: 600px;
-
-  --primary: #c84702;
-  --on-primary: #fff;
-  --background: #fff;
-  --on-background: #000;
-  --error: #b00020;
-  --on-error: #fff;
-
-  --accents-1: #fafafa;
-  --accents-2: #eaeaea;
-  --accents-3: #999;
-  --accents-4: #888;
-  --accents-5: #666;
-  --accents-6: #444;
-
-  --shadow-small: 0 5px 10px rgba(0, 0, 0, 0.12);
-  --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
-  --shadow-large: 0 30px 60px rgba(0, 0, 0, 0.12);
-
-  --selection: #faf3dd;
-`;
-const dark = `
-  --primary: #c84702;
-  --on-primary: #fff;
-  --background: #000;
-  --on-background: #fff;
-  --error: #cf6679;
-  --on-error: #000;
-
-  --accents-1: #111;
-  --accents-2: #333;
-  --accents-3: #444;
-  --accents-4: #666;
-  --accents-5: #888;
-  --accents-6: #999;
-
-  --shadow-small: 0 0 0 1px var(--accents-2);
-  --shadow-medium: 0 0 0 1px var(--accents-2);
-  --shadow-large: 0 0 0 1px var(--accents-2);
-
-  --selection: #c84702;
-`;
-
 export default function App({ Component, pageProps }: AppProps): JSX.Element {
-  const [theme, setTheme] = useState<Theme>('system');
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-      document.documentElement.classList.remove('system');
-    } else if (theme === 'light') {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.remove('system');
-    } else {
-      document.documentElement.classList.add('system');
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.remove('light');
-    }
-  }, [theme]);
-  useEffect(() => {
-    setTheme((prev) => (localStorage.getItem('theme') as Theme) || prev);
-  }, []);
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <>
+      <Head>
+        <title>Poll Daddy Hack</title>
+      </Head>
       <NProgress />
       <Component {...pageProps} />
       <style jsx global>{`
@@ -160,25 +86,35 @@ export default function App({ Component, pageProps }: AppProps): JSX.Element {
       `}</style>
       <style jsx global>{`
         :root {
-          ${light}
-        }
-        @media (prefers-color-scheme: light) {
-          :root {
-            ${light}
-          }
-        }
-        @media (prefers-color-scheme: dark) {
-          :root {
-            ${dark}
-          }
-        }
-        .light {
-          ${light}
-        }
-        .dark {
-          ${dark}
+          --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+            'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans',
+            'Droid Sans', 'Helvetica Neue', sans-serif;
+          --font-mono: Menlo, Monaco, Lucida Console, Liberation Mono,
+            DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+
+          --page-width: 800px;
+          
+          --primary: #c84702;
+          --on-primary: #fff;
+          --background: #000;
+          --on-background: #fff;
+          --error: #cf6679;
+          --on-error: #000;
+
+          --accents-1: #111;
+          --accents-2: #333;
+          --accents-3: #444;
+          --accents-4: #666;
+          --accents-5: #888;
+          --accents-6: #999;
+
+          --shadow-small: 0 0 0 1px var(--accents-2);
+          --shadow-medium: 0 0 0 1px var(--accents-2);
+          --shadow-large: 0 0 0 1px var(--accents-2);
+
+          --selection: #c84702;
         }
       `}</style>
-    </ThemeContext.Provider>
+    </>
   );
 }
