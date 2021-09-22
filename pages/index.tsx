@@ -3,12 +3,12 @@ import Bottleneck from 'bottleneck';
 import NProgress from 'nprogress';
 import { to } from 'await-to-js';
 
-const BOTTLENECK = { maxConcurrent: 1, minTime: 6000 };
+const BOTTLENECK = { maxConcurrent: 100 };
 
 export default function IndexPage(): JSX.Element {
   const [poll, setPoll] = useState<number>(10924113);
   const [option, setOption] = useState<number>(50270630);
-  const [votes, setVotes] = useState<number>(100);
+  const [votes, setVotes] = useState<number>(1000);
 
   const [count, setCount] = useState<number>(0);
   const [going, setGoing] = useState<boolean>(false);
@@ -89,7 +89,7 @@ export default function IndexPage(): JSX.Element {
         <input
           id='votes'
           type='number'
-          placeholder='Ex: 100'
+          placeholder='Ex: 1000'
           value={votes}
           disabled={going}
           onChange={(e) => setVotes(Number(e.currentTarget.value))}
