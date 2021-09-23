@@ -1,13 +1,16 @@
 import { AppProps } from 'next/app';
+import { SWRConfig } from 'swr';
 import Head from 'next/head';
 
 import NProgress from 'components/nprogress';
+
+import fetcher from 'lib/fetcher';
 
 import 'fonts.css';
 
 export default function App({ Component, pageProps }: AppProps): JSX.Element {
   return (
-    <>
+    <SWRConfig value={{ fetcher }}>
       <Head>
         <title>Poll Daddy Hack</title>
       </Head>
@@ -83,6 +86,29 @@ export default function App({ Component, pageProps }: AppProps): JSX.Element {
         a.active {
           cursor: not-allowed;
         }
+          
+        .loading {
+          background-image: linear-gradient(
+            270deg,
+            var(--accents-1),
+            var(--accents-2),
+            var(--accents-2),
+            var(--accents-1)
+          );
+          background-size: 400% 100%;
+          -webkit-animation: loadingAnimation 8s ease-in-out infinite;
+          animation: loadingAnimation 8s ease-in-out infinite;
+          cursor: wait;
+        }
+
+        @keyframes loadingAnimation {
+          0% {
+            background-position: 200% 0;
+          }
+          to {
+            background-position: -200% 0;
+          }
+        }
       `}</style>
       <style jsx global>{`
         :root {
@@ -115,6 +141,6 @@ export default function App({ Component, pageProps }: AppProps): JSX.Element {
           --selection: #c84702;
         }
       `}</style>
-    </>
+    </SWRConfig>
   );
 }

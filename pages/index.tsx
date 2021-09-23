@@ -1,18 +1,25 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Bottleneck from 'bottleneck';
 import NProgress from 'nprogress';
 import { to } from 'await-to-js';
+import useSWR from 'swr';
+
+import { Option } from 'pages/api/options';
+
+import Empty from 'components/empty';
 
 const BOTTLENECK = { maxConcurrent: 100 };
 
 export default function IndexPage(): JSX.Element {
   const [poll, setPoll] = useState('https://poll.fm/10924113');
+  const pollId = useMemo(() => poll.split('https://poll.fm/').pop(), [poll]);
+  
   const [option, setOption] = useState(50270630);
-  const [votes, setVotes] = useState<number>(1000);
+  const [votes, setVotes] = useState(1000);
 
-  const [count, setCount] = useState<number>(0);
-  const [going, setGoing] = useState<boolean>(false);
-  const [message, setMessage] = useState<string>('');
+  const [count, setCount] = useState(0);
+  const [going, setGoing] = useState(false);
+  const [message, setMessage] = useState('');
   useEffect(() => {
     if (going) {
       NProgress.set(count / votes);
@@ -40,13 +47,12 @@ export default function IndexPage(): JSX.Element {
     e.stopPropagation();
     setGoing(true);
     setCount(0);
-    const pollId = Number(poll.split('https://poll.fm/').pop());
-    const url = `/api/poll?poll=${pollId}&option=${option}&votes=${votes}`;
+    const url = `/api/poll?poll=${pollId}&option=${option}`;
     setMessage(`Forging ${votes} votes...`);
-    await to(Promise.all(Array(Number(votes)).fill(null).map((_, idx) => limiter.current.schedule({ id: idx.toString() }, () => fetch(url)))));
+    await to(Promise.all(Array(votes).fill(null).map((_, idx) => limiter.current.schedule({ id: idx.toString() }, () => fetch(url)))));
     setMessage(`Forged ${votes} votes.`);
     setGoing(false);
-  }, [poll, option, votes]);
+  }, [pollId, option, votes]);
   const stop = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -55,6 +61,8 @@ export default function IndexPage(): JSX.Element {
     limiter.current = new Bottleneck(BOTTLENECK);
     setMessage(`Canceled ${votes - count} votes.`);
   }, [votes, count]);
+
+  const { data } = useSWR<Option[]>(`/api/options?poll=${pollId}`);
 
   return (
     <main className='wrapper'>
@@ -68,28 +76,38 @@ export default function IndexPage(): JSX.Element {
         <input 
           id='poll'
           type='url' 
+          className='textfield'
           placeholder='Ex: https://poll.fm/10924113' 
           value={poll} 
           disabled={going}
           onChange={(e) => setPoll(e.currentTarget.value)} 
         />
       </div>
-      <div className='field'>
-        <label htmlFor='option'>Option ID</label>
-        <input
-          id='option'
-          type='number' 
-          placeholder='Ex: 50270630' 
-          value={option} 
-          disabled={going}
-          onChange={(e) => setOption(Number(e.currentTarget.value))} 
-        />
-      </div>
+      <ul className='field options'>
+        <label>Option</label>
+        {data && data.map(({ id, label }) => (
+          <li key={id}>
+            <input
+              id={id}
+              type='radio' 
+              value={id} 
+              disabled={going}
+              className='radio'
+              checked={option === Number(id)}
+              onChange={() => setOption(Number(id))} 
+            />
+            <label htmlFor={id}>{label}</label>
+          </li>
+        ))}
+        {!data && Array(5).fill(null).map((_, idx) => <li key={idx} className='loading' />)}
+        {data && !data.length && <Empty>Enter a valid poll URL above to get started.</Empty>}
+      </ul>
       <div className='field'>
         <label htmlFor='votes'>Number of votes</label>
         <input
           id='votes'
           type='number'
+          className='textfield'
           placeholder='Ex: 1000'
           value={votes}
           disabled={going}
@@ -97,13 +115,27 @@ export default function IndexPage(): JSX.Element {
         />
       </div>
       <div className='buttons'>
-        <button className='reset' type='button' disabled={going} onClick={start}>Start</button>
-        <button className='reset' type='button' disabled={!going} onClick={stop}>Stop</button>
+        <button 
+          className='reset' 
+          type='button' 
+          disabled={going || !data?.some((d) => Number(d.id) === option)} 
+          onClick={start}
+        >
+          Start
+        </button>
+        <button 
+          className='reset' 
+          type='button' 
+          disabled={!going} 
+          onClick={stop}
+        >
+          Stop
+        </button>
       </div>
       <p>{(count / votes * 100).toFixed(2)}% progress; {count}/{votes} votes forged. <span className='message'>{message}</span></p>
       <style jsx>{`
         main {
-          margin: 1rem auto;
+          margin: 2rem auto;
         }
 
         header {
@@ -123,6 +155,76 @@ export default function IndexPage(): JSX.Element {
           margin: 1rem 0;
         }
 
+        ul {
+          list-style: none;
+        }
+
+        ul :global(.empty) {
+          margin-top: 1rem;
+          height: ${1.25 * 5 + 1 * 4}rem;
+        }
+
+        li {
+          display: flex;
+          align-items: center;
+          margin: 1rem 0;
+          height: 1.25rem;
+        }
+
+        li.loading {
+          width: 100%;
+          border-radius: 4px;
+        }
+
+        li:last-child {
+          margin-bottom: 0;
+        }
+
+        li label,
+        li .radio {
+          margin: 0;
+          text-transform: unset;
+        }
+
+        .radio {
+          position: absolute;
+          opacity: 0;
+        }
+        .radio + label:before {
+          content: '';
+          background: var(--accents-1);
+          border-radius: 100%;
+          border: 1px solid var(--accents-2);
+          display: inline-block;
+          width: 1rem;
+          height: 1rem;
+          position: relative;
+          top: 0.25rem;
+          margin-right: 0.75rem; 
+          vertical-align: top;
+          cursor: pointer;
+          text-align: center;
+          transition: all 0.2s ease 0s;
+        }
+        .radio:checked + label:before {
+          background-color: var(--primary);
+          box-shadow: inset 0 0 0 4px var(--accents-1);
+          border-color: var(--primary);
+          outline: none;
+        }
+        .radio:disabled + label:before {
+          border-color: var(--accents-2);
+          background: var(--accents-1);
+          filter: grayscale(1);
+          cursor: not-allowed;
+        }
+        .radio:checked:disabled + label:before {
+          background-color: var(--accents-2);
+        }
+        .radio + label:empty:before {
+          margin-right: 0;
+        }
+
         .buttons {
           display: flex;
           margin: 0 0 2rem;
@@ -136,7 +238,7 @@ export default function IndexPage(): JSX.Element {
           display: block;
         }
         
-        input {
+        .textfield {
           border-radius: 4px;
           border: 1px solid var(--accents-2);
           box-shadow: none;
@@ -155,8 +257,8 @@ export default function IndexPage(): JSX.Element {
           transition: border 0.2s ease 0s;
         }
 
-        input:focus,
-        input:active {
+        .textfield:focus,
+        .textfield:active {
           border: 1px solid var(--primary);
         }
 
