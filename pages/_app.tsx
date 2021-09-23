@@ -12,7 +12,8 @@ export default function App({ Component, pageProps }: AppProps): JSX.Element {
   return (
     <SWRConfig value={{ fetcher }}>
       <Head>
-        <title>Poll Daddy Hack</title>
+        <title>Crowd Signal Hack</title>
+        <meta name='description' content='Easily rack up votes for any Crowd Signal (previously Poll Daddy) public survey.' />
       </Head>
       <NProgress />
       <Component {...pageProps} />
