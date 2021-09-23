@@ -67,9 +67,10 @@ export default function IndexPage(): JSX.Element {
   return (
     <main className='wrapper'>
       <header>
-        <h1>Poll Daddy Hack</h1>
-        <p>Easily rack up votes for any Poll Daddy public survey. Created by <a href='https://nicholaschiang.com' target='_blank' rel='noopener noreferrer'>Nicholas Chiang</a>.</p>
+        <h1>Crowd Signal Hack</h1>
+        <p>Easily rack up votes for any Crowd Signal (previously Poll Daddy) public survey.</p>
         <p>Simply click the “Start” button, leave this tab open, and watch the votes!</p>
+        <p>Created by <a href='https://nicholaschiang.com' target='_blank' rel='noopener noreferrer'>Nicholas Chiang</a> because it was just too easy. 😎😤</p>
       </header>
       <div className='field'>
         <label htmlFor='poll'>Poll URL</label>
