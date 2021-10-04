@@ -11,10 +11,10 @@ import Empty from 'components/empty';
 const BOTTLENECK = { maxConcurrent: 100 };
 
 export default function IndexPage(): JSX.Element {
-  const [poll, setPoll] = useState('https://poll.fm/10924113');
+  const [poll, setPoll] = useState('https://poll.fm/10933966');
   const pollId = useMemo(() => poll.split('https://poll.fm/').pop(), [poll]);
   
-  const [option, setOption] = useState(50270630);
+  const [option, setOption] = useState(50307823);
   const [votes, setVotes] = useState(1000);
 
   const [count, setCount] = useState(0);
