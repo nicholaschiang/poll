@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 're
 import Bottleneck from 'bottleneck';
 import NProgress from 'nprogress';
 import { to } from 'await-to-js';
+import { useRouter } from 'next/router';
 import useSWR from 'swr';
 
 import { Option } from 'pages/api/options';
@@ -10,12 +11,15 @@ import Empty from 'components/empty';
 
 const BOTTLENECK = { maxConcurrent: 100 };
 
+function num(n: unknown, d: number): number {
+  return Number.isNaN(Number(n)) ? d : Number(n);
+}
+
 export default function IndexPage(): JSX.Element {
-  const [poll, setPoll] = useState('https://poll.fm/10933966');
-  const pollId = useMemo(() => poll.split('https://poll.fm/').pop(), [poll]);
-  
-  const [option, setOption] = useState(50307823);
-  const [votes, setVotes] = useState(1000);
+  const { push, query: { p, o, v } } = useRouter();
+  const poll = useMemo(() => num(p, 10933966), [p]);
+  const option = useMemo(() => num(o, 50307823), [o]);
+  const votes = useMemo(() => num(v, 1000), [v]);
 
   const [count, setCount] = useState(0);
   const [going, setGoing] = useState(false);
@@ -47,12 +51,12 @@ export default function IndexPage(): JSX.Element {
     e.stopPropagation();
     setGoing(true);
     setCount(0);
-    const url = `/api/poll?poll=${pollId}&option=${option}`;
+    const url = `/api/poll?poll=${poll}&option=${option}`;
     setMessage(`Forging ${votes} votes...`);
     await to(Promise.all(Array(votes).fill(null).map((_, idx) => limiter.current.schedule({ id: idx.toString() }, () => fetch(url)))));
     setMessage(`Forged ${votes} votes.`);
     setGoing(false);
-  }, [pollId, option, votes]);
+  }, [poll, option, votes]);
   const stop = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -62,7 +66,7 @@ export default function IndexPage(): JSX.Element {
     setMessage(`Canceled ${votes - count} votes.`);
   }, [votes, count]);
 
-  const { data } = useSWR<Option[]>(`/api/options?poll=${pollId}`);
+  const { data } = useSWR<Option[]>(`/api/options?poll=${poll}`);
 
   return (
     <main className='wrapper'>
@@ -79,9 +83,9 @@ export default function IndexPage(): JSX.Element {
           type='url' 
           className='textfield'
           placeholder='Ex: https://poll.fm/10924113' 
-          value={poll} 
+          value={`https://poll.fm/${poll}`} 
           disabled={going}
-          onChange={(e) => setPoll(e.currentTarget.value)} 
+          onChange={(e) => push(`/?p=${e.currentTarget.value.split('https://poll.fm/').pop()}&v=${votes}&o=${option}`)} 
         />
       </div>
       <ul className='field options'>
@@ -95,7 +99,7 @@ export default function IndexPage(): JSX.Element {
               disabled={going}
               className='radio'
               checked={option === Number(id)}
-              onChange={() => setOption(Number(id))} 
+              onChange={() => push(`/?p=${poll}&v=${votes}&o=${id}`)} 
             />
             <label htmlFor={id}>{label}</label>
           </li>
@@ -112,7 +116,7 @@ export default function IndexPage(): JSX.Element {
           placeholder='Ex: 1000'
           value={votes}
           disabled={going}
-          onChange={(e) => setVotes(Number(e.currentTarget.value))}
+          onChange={(e) => push(`/?p=${poll}&v=${e.currentTarget.value}&o=${option}`)}
         />
       </div>
       <div className='buttons'>
