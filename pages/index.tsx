@@ -17,8 +17,8 @@ function num(n: unknown, d: number): number {
 
 export default function IndexPage(): JSX.Element {
   const { push, query: { p, o, v } } = useRouter();
-  const poll = useMemo(() => num(p, 10933966), [p]);
-  const option = useMemo(() => num(o, 50307823), [o]);
+  const poll = useMemo(() => num(p, 11033591), [p]);
+  const option = useMemo(() => num(o, 50654329), [o]);
   const votes = useMemo(() => num(v, 1000), [v]);
 
   const [count, setCount] = useState(0);
